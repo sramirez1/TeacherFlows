@@ -12,7 +12,7 @@ header<-dashboardHeader(title="The River of Teachers ALPHA", titleWidth = 350)
 sidebar<-dashboardSidebar(
   sidebarMenu(
     selectInput("countryInput", "Year of DOE Entry",choices = c("2012-2013", "2013-2014", "2014-2015","2015-2016","2016-2017")),
-    selectInput("tppInput", "Teacher Preparation Program",choices = c("Columbia","CUNY", "TFA", "Other"))
+    checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c("Columbia","CUNY", "TFA", "Other"), selected=c("Columbia","CUNY", "TFA", "Other"))
     )
   )
 
@@ -26,8 +26,8 @@ body<-dashboardBody(
   fluidRow(
     column(3,
            valueBox(25, "New Hires", icon=icon("user"), width=NULL),
-            valueBox(30, "Exits in 2014-2015", icon=icon("sign-out"), width=NULL),
-            valueBox(36, "Exits in 2015-2016", icon=icon("sign-out"), width=NULL)),
+            valueBox(30, "Exits in 2014-2015", icon=icon("sign-out"), width=NULL, color = "purple"),
+            valueBox(36, "Exits in 2015-2016", icon=icon("sign-out"), width=NULL, color = "yellow")),
   
     column(9,
            box(width=NULL, solidHeader=TRUE, status='info',

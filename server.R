@@ -11,42 +11,60 @@ server <- function(input, output) {
   ratings<-c('Highly Effective', 'Effective', 'Developing', 'Ineffective')
   
   #Simulate Data Entry to Ratings in 2013-2014
-  entry <- data_frame(origins = sample(c('Columbia', 'TFA', 'CUNY', 'Other'), size = 100, replace = TRUE), 
-                      destinations = sample(c("DOE Entry 2012-2013"), size = 100, replace = TRUE))
+  entry <- reactive({
+          data_frame(origins = sample(c('Columbia', 'TFA', 'CUNY', 'Other'), size = 1000, replace = TRUE), 
+                      destinations = sample(c("DOE Entry 2012-2013"), size = 1000, replace = TRUE))%>%
+        filter(origins %in% c(input$tppInput))
+  })
   
-  entry1 <- data_frame(origins = sample(c("DOE Entry 2012-2013"), size = 100, replace = TRUE), 
-                       destinations = sample(paste(ratings, "2013-2014"), size = 100, replace = TRUE))
+  rows<-reactive({c(nrow(entry()))})
+  
+  entry1 <- reactive({
+    data_frame(origins = sample(c("DOE Entry 2012-2013"), size = rows(), replace = TRUE), 
+                       destinations = sample(paste(ratings, "2013-2014"), size =rows(), replace = TRUE))
+  })
   
   #Flow from Ratings in 2013-2014 to Ratings in 2013-2014
-  df1<- data_frame(origins = sample(paste(ratings, "2013-2014"), size = 100, replace = TRUE), 
-                    destinations = sample(paste(c(ratings,"Exit"), "2014-2015"), size = 100, replace = TRUE))%>%
-        arrange(origins)
+  df1<- reactive({
+    data_frame(origins = sample(paste(ratings, "2013-2014"), size = rows(), replace = TRUE), 
+                    destinations = sample(paste(c(ratings,"Exit"), "2014-2015"), size = rows(), replace = TRUE))
+  })
   
   #Flow from Ratings in 2014-2015 to Ratings in 2015-2016
-  df2 <- data_frame(origins = sample(paste(ratings, "2014-2015"), size = 100, replace = TRUE), 
-                    destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = 100, replace = TRUE))
+  df2 <-  reactive({
+    data_frame(origins = sample(paste(ratings, "2014-2015"), size = rows(), replace = TRUE), 
+                    destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = rows(), replace = TRUE))
+  })
   
   #Flow from Exit in 2016-2016 to Exit Reason
-  df3 <- data_frame(origins = sample(c('Exit 2015-2016'), size = 100, replace = TRUE), 
-                    destinations = sample(c("Removal","Relocation","Retirement","Morbidity"), size = 100, replace = TRUE))
+  df3 <-reactive({
+    data_frame(origins = sample(c('Exit 2015-2016'), size = rows(), replace = TRUE), 
+                    destinations = sample(c("Removal","Relocation","Retirement","Morbidity"), size = rows(), replace = TRUE))
+  })
   
   #Stack flow dataframes
-  flow<-entry%>%
-    rbind(entry1, df1, df2, df3)%>%
+  flow<-reactive({
+    entry()%>%
+    rbind(entry1(), df1(), df2(), df3())%>%
     as.data.frame()
+  })
 
   #Calculate flow counts by origin and destination
-  flowCounts <-flow %>%
+  flowCounts <-reactive({
+    flow() %>%
     group_by(origins, destinations) %>%
     summarise(counts=n()) %>%
     ungroup()
+  })
     
   #Vector of unique origin and destinations
-  name_vec <- unique(c(unique(flowCounts$origins), unique(flowCounts$destinations)))
+  name_vec <- reactive({
+    unique(c(unique(flowCounts()$origins), unique(flowCounts()$destinations)))
+  })
   
   #Map node id to each name
   nodes <- reactive({
-    data.frame(name = name_vec[name_vec!=input$tppInput], id = 0:(length(name_vec[name_vec!=input$tppInput])-1))
+    data.frame(name = name_vec, id = 0:(length(name_vec)-1))
   })
 
 
@@ -55,12 +73,11 @@ server <- function(input, output) {
   colors_link_array <- paste0("[", paste0("'", colors_link,"'", collapse = ','), "]")
   
   links <- reactive({
-    flowCounts %>%
-    left_join(nodes(), by = c('origins' = 'name')) %>%
-    rename(origin_id = id) %>%
-    left_join(nodes(), by = c('destinations' = 'name')) %>%
-    rename(dest_id = id)%>%
-    filter(origins!=input$tppInput)
+    flowCounts()
+    # left_join(nodes(), by = c('origins' = 'name')) %>%
+    # rename(origin_id = id) %>%
+    # left_join(nodes(), by = c('destinations' = 'name')) %>%
+    # rename(dest_id = id)%>%
   })
   
 
