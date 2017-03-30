@@ -34,37 +34,48 @@ server <- function(input, output) {
   flow<-entry%>%
     rbind(entry1, df1, df2, df3)%>%
     as.data.frame()
-  
+
   #Calculate flow counts by origin and destination
-  flowCounts <- flow %>%
+  flowCounts <-flow %>%
     group_by(origins, destinations) %>%
     summarise(counts=n()) %>%
     ungroup()
-  
+    
   #Vector of unique origin and destinations
   name_vec <- unique(c(unique(flowCounts$origins), unique(flowCounts$destinations)))
   
   #Map node id to each name
-  nodes <- data.frame(name = name_vec, id = 0:(length(name_vec)-1))
+  nodes <- reactive({
+    data.frame(name = name_vec[name_vec!=input$tppInput], id = 0:(length(name_vec[name_vec!=input$tppInput])-1))
+  })
+
 
   #Add colors to links
   colors_link <- c('green', 'blue', 'yellow', 'brown', 'red')
   colors_link_array <- paste0("[", paste0("'", colors_link,"'", collapse = ','), "]")
   
-  links <- flowCounts %>%
-    left_join(nodes, by = c('origins' = 'name')) %>%
+  links <- reactive({
+    flowCounts %>%
+    left_join(nodes(), by = c('origins' = 'name')) %>%
     rename(origin_id = id) %>%
-    left_join(nodes, by = c('destinations' = 'name')) %>%
-    rename(dest_id = id)
+    left_join(nodes(), by = c('destinations' = 'name')) %>%
+    rename(dest_id = id)%>%
+    filter(origins!=input$tppInput)
+  })
+  
 
   if (google==FALSE){
     
     ##Generate sankey diagram using networkD3
-    sankey<-sankeyNetwork(Links = links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
-                  Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
-                  )
+    # sankey<-sankeyNetwork(Links=links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
+    #               Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
+    #               )
   
-    output$Sankey<-renderSankeyNetwork(sankey)
+    output$Sankey<-renderSankeyNetwork(
+      sankeyNetwork(Links=links(), Nodes = nodes(), Source = 'origin_id', Target = 'dest_id',
+                            Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
+                    )
+      )
     
   } else{
     
@@ -75,9 +86,9 @@ server <- function(input, output) {
       }" )
     
     ##Generate sankey diagram using googleVis
-    sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
-                    options=list(title="Hello World", height=800, width=1200,
-                                 sankey=opts))
+    # sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
+    #                 options=list(title="Hello World", height=800, width=1600,
+    #                              sankey=opts))
 
 
 # "{
@@ -88,7 +99,11 @@ server <- function(input, output) {
 
 
     output$Sankey<-renderGvis({
-      sankey
+      
+      gvisSankey(links(), from="origins", to="destinations", weight="counts",
+                 options=list(title="Hello World", height=800, width=1600,
+                              sankey=opts))
+      
       })
   }
   

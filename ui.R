@@ -7,38 +7,71 @@ library(DT)
 library(shinydashboard)
 #Use googleVis sankey?
 google=TRUE
+header<-dashboardHeader(title="The River of Teachers ALPHA", titleWidth = 350)
 
-ui <- fluidPage(
-  
-  titlePanel("NYCDOE Teacher Retention Flows"),
-  
-  if (google==FALSE){
-    #Render Sankey with networkD3
-    sankeyNetworkOutput("Sankey")
-    
-  } else {
-  #Render sankey with googleVis
-  mainPanel(
-    htmlOutput("Sankey")
-
-  )
-  },
-  
-
-    
-  fluidRow(),
-  fluidRow(
-    column(3,
-           h4("Diamonds Explorer"),
-           sliderInput('sampleSize', 'Sample Size', 
-                       min=1, max=53000,
-                       value=min(1000, 53000), 
-                       step=500, round=0)
-    ),
-    column(9,
-           DT::dataTableOutput("results")
+sidebar<-dashboardSidebar(
+  sidebarMenu(
+    selectInput("countryInput", "Year of DOE Entry",choices = c("2012-2013", "2013-2014", "2014-2015","2015-2016","2016-2017")),
+    selectInput("tppInput", "Teacher Preparation Program",choices = c("Columbia","CUNY", "TFA", "Other"))
     )
   )
+
+body<-dashboardBody(
+  fluidRow(
+    column(width=12,
+           box(width = NULL, solidHeader = TRUE, status= 'info', title="Sankey Flowchart by Entry Year",
+               htmlOutput("Sankey")
+               ))
+    ),
+  fluidRow(
+    column(3,
+           valueBox(25, "New Hires", icon=icon("user"), width=NULL),
+            valueBox(30, "Exits in 2014-2015", icon=icon("sign-out"), width=NULL),
+            valueBox(36, "Exits in 2015-2016", icon=icon("sign-out"), width=NULL)),
+  
+    column(9,
+           box(width=NULL, solidHeader=TRUE, status='info',
+               DT::dataTableOutput("results"))
+           )
+    )
+  )
+  
+  
+dashboardPage(header, sidebar, body)
+
+
+
+# ui <- fluidPage(
+#   
+#   titlePanel("NYCDOE Teacher Retention Flows"),
+#   
+#   if (google==FALSE){
+#     #Render Sankey with networkD3
+#     sankeyNetworkOutput("Sankey")
+#     
+#   } else {
+#   #Render sankey with googleVis
+#   mainPanel(
+#     htmlOutput("Sankey")
+# 
+#   )
+#   },
+#   
+# 
+#     
+#   fluidRow(),
+#   fluidRow(
+#     column(3,
+#            h4("Diamonds Explorer"),
+#            sliderInput('sampleSize', 'Sample Size', 
+#                        min=1, max=53000,
+#                        value=min(1000, 53000), 
+#                        step=500, round=0)
+#     ),
+#     column(9,
+#            DT::dataTableOutput("results")
+#     )
+#   )
   
   # sidebarLayout(
   #   sidebarPanel(
@@ -59,4 +92,4 @@ ui <- fluidPage(
   #     
   #   )
   # )
-)
+# )
