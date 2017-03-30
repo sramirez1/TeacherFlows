@@ -4,9 +4,9 @@ library(dplyr)
 library(googleVis)
 library(networkD3)
 library(DT)
-
+library(shinydashboard)
 #Use googleVis sankey?
-google=FALSE
+google=TRUE
 
 ui <- fluidPage(
   

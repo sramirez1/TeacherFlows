@@ -2,7 +2,7 @@ library(shiny)
 server <- function(input, output) {
 
   #Use googleVis sankey?
-  google=FALSE
+  google=TRUE
   
   ##Create temporary dataset for Sankey
   set.seed(1983)
@@ -12,26 +12,34 @@ server <- function(input, output) {
   
   #Simulate Data Entry to Ratings in 2013-2014
   entry <- data_frame(origins = sample(c('Columbia', 'TFA', 'CUNY', 'Other'), size = 100, replace = TRUE), 
-                   destinations = sample(paste(ratings, "2013-2014"), size = 100, replace = TRUE))
+                      destinations = sample(c("DOE Entry 2012-2013"), size = 100, replace = TRUE))
+  
+  entry1 <- data_frame(origins = sample(c("DOE Entry 2012-2013"), size = 100, replace = TRUE), 
+                       destinations = sample(paste(ratings, "2013-2014"), size = 100, replace = TRUE))
   
   #Flow from Ratings in 2013-2014 to Ratings in 2013-2014
   df1<- data_frame(origins = sample(paste(ratings, "2013-2014"), size = 100, replace = TRUE), 
-                    destinations = sample(paste(c(ratings,"Exit"), "2014-2015"), size = 100, replace = TRUE))
+                    destinations = sample(paste(c(ratings,"Exit"), "2014-2015"), size = 100, replace = TRUE))%>%
+        arrange(origins)
   
   #Flow from Ratings in 2014-2015 to Ratings in 2015-2016
   df2 <- data_frame(origins = sample(paste(ratings, "2014-2015"), size = 100, replace = TRUE), 
                     destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = 100, replace = TRUE))
+  
+  #Flow from Exit in 2016-2016 to Exit Reason
+  df3 <- data_frame(origins = sample(c('Exit 2015-2016'), size = 100, replace = TRUE), 
+                    destinations = sample(c("Removal","Relocation","Retirement","Morbidity"), size = 100, replace = TRUE))
+  
   #Stack flow dataframes
   flow<-entry%>%
-    rbind(df1, df2)%>%
+    rbind(entry1, df1, df2, df3)%>%
     as.data.frame()
   
   #Calculate flow counts by origin and destination
   flowCounts <- flow %>%
     group_by(origins, destinations) %>%
     summarise(counts=n()) %>%
-    ungroup() %>%
-    arrange(desc(counts))
+    ungroup()
   
   #Vector of unique origin and destinations
   name_vec <- unique(c(unique(flowCounts$origins), unique(flowCounts$destinations)))
@@ -39,33 +47,44 @@ server <- function(input, output) {
   #Map node id to each name
   nodes <- data.frame(name = name_vec, id = 0:(length(name_vec)-1))
 
-
+  #Add colors to links
+  colors_link <- c('green', 'blue', 'yellow', 'brown', 'red')
+  colors_link_array <- paste0("[", paste0("'", colors_link,"'", collapse = ','), "]")
+  
   links <- flowCounts %>%
     left_join(nodes, by = c('origins' = 'name')) %>%
     rename(origin_id = id) %>%
     left_join(nodes, by = c('destinations' = 'name')) %>%
-    rename(dest_id = id)%>%
-    arrange(origins)
-  
+    rename(dest_id = id)
+
   if (google==FALSE){
     
     ##Generate sankey diagram using networkD3
     sankey<-sankeyNetwork(Links = links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
-                  Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1000, width=2000
+                  Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
                   )
   
     output$Sankey<-renderSankeyNetwork(sankey)
     
   } else{
     
+    opts <- paste0("{
+        link: { colorMode: 'source',
+                color: { fill: 'lightgray', fillOpacity: 0.1},
+                node:{nodePadding: 5, label:{fontSize: 14}, interactivity: true, width: 20}}
+      }" )
+    
     ##Generate sankey diagram using googleVis
     sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
-                    options=list(height=800, width=1200,
-                                 sankey="{
-                               link:{color:{fill: 'lightgray', fillOpacity: 0.7}},
-                               node:{nodePadding: 5, label:{fontSize: 12}, interactivity: true, width: 20},
-                               }")
-                    )
+                    options=list(title="Hello World", height=800, width=1200,
+                                 sankey=opts))
+
+
+# "{
+#                                link:{color:{fill: 'lightgray', fillOpacity: 0.5}},
+#                                node:{nodePadding: 5, label:{fontSize: 12}, interactivity: true, width: 20},
+#                                }")
+#                     )
 
 
     output$Sankey<-renderGvis({
