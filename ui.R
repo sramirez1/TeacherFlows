@@ -5,18 +5,26 @@ library(googleVis)
 library(networkD3)
 library(DT)
 
+#Use googleVis sankey?
+google=FALSE
+
 ui <- fluidPage(
   
   titlePanel("NYCDOE Teacher Retention Flows"),
   
-  #Render Sankey with networkD3
-  # sankeyNetworkOutput("Sankey"),
-  
+  if (google==FALSE){
+    #Render Sankey with networkD3
+    sankeyNetworkOutput("Sankey")
+    
+  } else {
   #Render sankey with googleVis
   mainPanel(
     htmlOutput("Sankey")
 
-  ),
+  )
+  },
+  
+
     
   fluidRow(),
   fluidRow(

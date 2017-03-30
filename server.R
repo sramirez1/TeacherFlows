@@ -1,6 +1,9 @@
 library(shiny)
 server <- function(input, output) {
 
+  #Use googleVis sankey?
+  google=FALSE
+  
   ##Create temporary dataset for Sankey
   set.seed(1983)
   
@@ -44,28 +47,34 @@ server <- function(input, output) {
     rename(dest_id = id)%>%
     arrange(origins)
   
-  ##Generate sankey diagram using networkD3
-  
-  # sankey<-sankeyNetwork(Links = links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
-  #               Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1000, width=2000
-  #               )
-  # 
-  # output$Sankey<-renderSankeyNetwork(sankey)
-  
-  
-  ##Generate sankey diagram using googleVis
-  sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
-                  options=list(height=800, width=850,
-                               sankey="{
-                             link:{color:{fill: 'lightgray', fillOpacity: 0.7}},
-                             node:{nodePadding: 5, label:{fontSize: 12}, interactivity: true, width: 20},
-                             }")
+  if (google==FALSE){
+    
+    ##Generate sankey diagram using networkD3
+    sankey<-sankeyNetwork(Links = links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
+                  Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1000, width=2000
                   )
+  
+    output$Sankey<-renderSankeyNetwork(sankey)
+    
+  } else{
+    
+    ##Generate sankey diagram using googleVis
+    sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
+                    options=list(height=800, width=1200,
+                                 sankey="{
+                               link:{color:{fill: 'lightgray', fillOpacity: 0.7}},
+                               node:{nodePadding: 5, label:{fontSize: 12}, interactivity: true, width: 20},
+                               }")
+                    )
 
 
-  output$Sankey<-renderGvis({
-    sankey
-    })
+    output$Sankey<-renderGvis({
+      sankey
+      })
+  }
+  
+  
+
   
   filtered<-reactive({
     babynames %>%
