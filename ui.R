@@ -5,6 +5,7 @@ library(googleVis)
 library(networkD3)
 library(DT)
 library(shinydashboard)
+library(babynames)
 #Use googleVis sankey?
 google=TRUE
 header<-dashboardHeader(title="The River of Teachers ALPHA", titleWidth = 350)
