@@ -10,45 +10,67 @@ server <- function(input, output) {
   #Vector of rating categories
   ratings<-c('Highly Effective', 'Effective', 'Developing', 'Ineffective')
   
+  #Vector of Teacher Preparation Programs
+  programs<-c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')
+  
+  #Create function to simulate flow data from origin to destination
+  originDestination<-function(origin=ratings, originYear="2012-2013",
+                              destination=ratings, destinationYear="2013-2014",
+                              sizes=rows(), probs=c(.1,.75,.1,.05)){
+    
+    df<-data_frame(origins = sample(paste0(origin, originYear), size =sizes, replace = TRUE), 
+               destinations = sample(paste0(destination, destinationYear), prob=probs, size =sizes, replace = TRUE))%>%
+      as.data.frame()
+   return(df) 
+  }
+  
   #Simulate Data Entry to Ratings in 2013-2014
-  entry <- reactive({
-          data_frame(origins = sample(c('Columbia', 'TFA', 'CUNY', 'Other'), size = 1000, replace = TRUE), 
-                      destinations = sample(c("DOE Entry 2012-2013"), size = 1000, replace = TRUE))%>%
-        filter(origins %in% c(input$tppInput))
+  entry <-reactive({
+    data_frame(origins = sample(programs, size = 1000, replace = TRUE),
+               destinations = sample(c("DOE Entry 2012-2013"), size = 1000, replace = TRUE))%>%
+    filter(origins %in% c(input$tppInput))
   })
   
   rows<-reactive({c(nrow(entry()))})
   
   entry1 <- reactive({
-    data_frame(origins = sample(c("DOE Entry 2012-2013"), size = rows(), replace = TRUE), 
-                       destinations = sample(paste(ratings, "2013-2014"), size =rows(), replace = TRUE))
+    originDestination(origin="DOE Entry 2012-2013", originYear = "",
+                      destination = ratings, destinationYear = " 2013-2014")
+    # data_frame(origins = sample(c("DOE Entry 2012-2013"), size = rows(), replace = TRUE),
+    #                    destinations = sample(paste(ratings, "2013-2014"),prob=c(.1,.75,.1,.05), size =rows(), replace = TRUE))
   })
-  
+
   #Flow from Ratings in 2013-2014 to Ratings in 2013-2014
   df1<- reactive({
-    data_frame(origins = sample(paste(ratings, "2013-2014"), size = rows(), replace = TRUE), 
-                    destinations = sample(paste(c(ratings,"Exit"), "2014-2015"), size = rows(), replace = TRUE))
+    originDestination(originYear = " 2013-2014",
+                      destination = c(ratings, "Exit"), destinationYear = " 2014-2015",
+                      probs=c(.1,.65,.1,.05,.1))
+    # data_frame(origins = sample(paste(ratings, "2013-2014"), size = rows(), replace = TRUE), 
+    #                 destinations = sample(paste(c(ratings,"Exit"), "2014-2015"),prob=c(.1,.65,.1,.05, .1), size = rows(), replace = TRUE))
   })
   
   #Flow from Ratings in 2014-2015 to Ratings in 2015-2016
   df2 <-  reactive({
-    data_frame(origins = sample(paste(ratings, "2014-2015"), size = rows(), replace = TRUE), 
-                    destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = rows(), replace = TRUE))
+    originDestination(originYear = " 2014-2015",
+                      destination = c(ratings, "Exit"), destinationYear = " 2015-2016",
+                      probs=c(.1,.65,.1,.05,.1))
+    # data_frame(origins = sample(paste(ratings, "2014-2015"), size = rows(), replace = TRUE), 
+    #                 destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = rows(), replace = TRUE))
   })
   
   #Flow from Exit in 2016-2016 to Exit Reason
-  df3 <-reactive({
-    data_frame(origins = sample(c('Exit 2015-2016'), size = rows(), replace = TRUE), 
-                    destinations = sample(c("Removal","Relocation","Retirement","Morbidity"), size = rows(), replace = TRUE))
-  })
+  # df3 <-reactive({
+  #   data_frame(origins = sample(c('Exit 2015-2016'), size = rows(), replace = TRUE), 
+  #                   destinations = sample(c("Removal","Relocation","Retirement","Morbidity"), size = rows(), replace = TRUE))
+  # })
   
   #Stack flow dataframes
   flow<-reactive({
     entry()%>%
-    rbind(entry1(), df1(), df2(), df3())%>%
+    rbind(entry1(), df1(), df2())%>%
     as.data.frame()
   })
-
+observe(print(flow()))
   #Calculate flow counts by origin and destination
   flowCounts <-reactive({
     flow() %>%
@@ -104,7 +126,7 @@ server <- function(input, output) {
     
     ##Generate sankey diagram using googleVis
     # sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
-    #                 options=list(title="Hello World", height=800, width=1600,
+    #                 options=list(title="Hello World", height=800, width=1200,
     #                              sankey=opts))
 
 
@@ -118,7 +140,7 @@ server <- function(input, output) {
     output$Sankey<-renderGvis({
       
       gvisSankey(links(), from="origins", to="destinations", weight="counts",
-                 options=list(title="Hello World", height=800, width=1600,
+                 options=list(title="Hello World", height=800, width=1200,
                               sankey=opts))
       
       })
@@ -128,10 +150,12 @@ server <- function(input, output) {
 
   
   filtered<-reactive({
-    babynames %>%
-    filter(name=="Jorge") %>%
-    group_by(year, name) %>%
-    tally(wt=n)})
+    df1()%>%
+    mutate(total=n()) %>%
+    group_by(destinations, total) %>%
+    summarise(look=n())%>%
+    mutate(pct=100*(look/total))%>%
+    select(destinations, pct)})
   output$results <-DT::renderDataTable(filtered(), options = list(pageLength=5))
   
   # filtered <- reactive({
