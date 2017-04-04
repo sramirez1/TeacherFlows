@@ -12,7 +12,7 @@ header<-dashboardHeader(title="The River of Teachers ALPHA", titleWidth = 350)
 
 sidebar<-dashboardSidebar(
   sidebarMenu(
-    selectInput("countryInput", "Year of DOE Entry",choices = c("2012-2013", "2013-2014", "2014-2015","2015-2016","2016-2017")),
+    selectInput("yearInput", "Year of DOE Entry",choices = c(2012, 2013, 2014, 2015, 2016)),
     checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers'), selected=c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')),
     selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00x001", "00X002","00X003"))
     )
