@@ -14,29 +14,41 @@ sidebar<-dashboardSidebar(
   sidebarMenu(
     selectInput("yearInput", "Year of DOE Entry",choices = c(2012, 2013, 2014, 2015, 2016)),
     checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers'), selected=c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')),
-    selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00x001", "00X002","00X003"))
+    selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00x001", "00X002","00X003")),
+    menuItem("Dashboard", tabName = "dashboard"),
+    menuItem("Streamgraph", tabName = "dashboard")
     )
   )
 
 body<-dashboardBody(
-  fluidRow(
-    column(width=12,
-           box(width = NULL, solidHeader = TRUE, status= 'info', title="Sankey Flowchart by Entry Year",
-               htmlOutput("Sankey")
-               ))
-    ),
-  fluidRow(
-    column(3,
-           valueBox(25, "New Hires", icon=icon("user"), width=NULL),
-            valueBox(30, "Exits in 2014-2015", icon=icon("sign-out"), width=NULL, color = "purple"),
-            valueBox(36, "Exits in 2015-2016", icon=icon("sign-out"), width=NULL, color = "yellow")),
-  
-    column(9,
-           box(width=NULL, solidHeader=TRUE, status='info',
-               DT::dataTableOutput("results"))
-           )
+  tabItems(
+    tabItem("dashboard",
+            
+            fluidRow(
+              valueBoxOutput("newHires"),
+              valueBoxOutput("exit1"),
+              valueBoxOutput("exit2")             
+            ),
+            
+            fluidRow(
+              box(
+                width = 12, status = "info", solidHeader = TRUE,
+                title = "Sankey Flowchart by Entry Year",
+                htmlOutput("Sankey")
+              )
+            ),
+            
+            fluidRow(
+              box(
+                width = 9, status = "info", solidHeader = TRUE,
+                title = "HEDI Ratings",
+                DT::dataTableOutput("results")
+              )
+            )
     )
   )
+)
+
   
   
 dashboardPage(header, sidebar, body)

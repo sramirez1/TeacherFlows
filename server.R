@@ -1,6 +1,9 @@
 library(shiny)
 server <- function(input, output) {
 
+  ##############################
+  ###Main Visualization Panel###
+  ##############################
   #Use googleVis sankey?
   google=TRUE
   
@@ -52,7 +55,7 @@ server <- function(input, output) {
     # data_frame(origins = sample(c("DOE Entry 2012-2013"), size = rows(), replace = TRUE),
     #                    destinations = sample(paste(ratings, "2013-2014"),prob=c(.1,.75,.1,.05), size =rows(), replace = TRUE))
   })
-  observe(print(table(entry1()$origin, entry1()$destination)))
+  observe(print(table(entry1()$destination)))
   #Flow from Ratings in Year 1 to Year2
   df1<- reactive({
     rbind(
@@ -63,6 +66,7 @@ server <- function(input, output) {
     # data_frame(origins = sample(paste(ratings, "2013-2014"), size = rows(), replace = TRUE), 
     #                 destinations = sample(paste(c(ratings,"Exit"), "2014-2015"),prob=c(.1,.65,.1,.05, .1), size = rows(), replace = TRUE))
   })
+  observe(print(table(df1()$destination)))
   
   #Flow from Ratings in Year 2 to Year 3
   df2 <-  reactive({
@@ -172,9 +176,9 @@ server <- function(input, output) {
       
       })
   }
-  
-  
-
+###############################  
+### Reactive Summary Table ####
+###############################
   
   filtered<-reactive({
     df1()%>%
@@ -184,27 +188,46 @@ server <- function(input, output) {
     mutate(pct=100*(look/total))%>%
     select(destinations, pct)})
   output$results <-DT::renderDataTable(filtered(), options = list(pageLength=5))
+
+############################  
+### Reactive Value Boxes ###
+############################
+  output$newHires<- renderValueBox({
+    valueBox(value=rows(),
+             subtitle="New Hires",
+             icon=icon("user"),
+             width=NULL
+    )
+  })
   
-  # filtered <- reactive({
-  #   bcl %>%
-  #     filter(Price >= input$priceInput[1],
-  #            Price <= input$priceInput[2],
-  #            Type == input$typeInput,
-  #            Country == input$countryInput
-  #     )
-  # })
-  # 
-  # output$coolplot <- renderPlot({
-  #   ggplot(filtered(), aes(Alcohol_Content)) +
-  #     geom_histogram()
-  # })
-  # 
-  # output$results <- renderTable({
-  #   filtered()
-  # })
-  # observe({print(input$priceInput)})
-  # priceDiff <- reactive({
-  #   diff(input$priceInput)
-  # })
-  # observe({print(priceDiff())})
+  exit1<-reactive({
+    df1()%>%
+    filter(substr(destinations,1,4)=="Exit")%>%
+    count()
+  })
+  
+  output$exit1<- renderValueBox({
+    valueBox(value=exit1(),
+             subtitle="Exits after Year 1",
+             icon=icon("sign-out"),
+             width=NULL,
+             color="purple"
+    )
+  })
+  
+  exit2<-reactive({
+    df2()%>%
+      filter(substr(destinations,1,4)=="Exit")%>%
+      count()
+  })
+
+  output$exit2<- renderValueBox({
+    valueBox(value=exit2(),
+             subtitle="Exits after Year 2",
+             icon=icon("sign-out"),
+             width=NULL,
+             color="yellow"
+    )
+  })
+  
 }
