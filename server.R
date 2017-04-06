@@ -189,7 +189,7 @@ server <- function(input, output) {
 
 
     output$Sankey<-renderGvis({
-      
+      req(input$tppInput)
       gvisSankey(links(), from="origins", to="destinations", weight="counts",
                  options=list(title="Hello World", height=800, width=1600,
                               sankey=opts))
