@@ -19,7 +19,7 @@ server <- function(input, output) {
   #Create function to simulate flow data from origin to destination
   originDestination<-function(origin=ratings, originYr=" 2012-2013",
                               destination=ratings, destYr=" 2013-2014",
-                              sizes=rows(), probs=c(.1,.75,.1,.05), year=2012){
+                              sizes=1500, probs=c(.1,.75,.1,.05), year=2012){
     
     df<-data_frame(origins = sample(paste0(origin, originYr), size =sizes, replace = TRUE), 
                destinations = sample(paste0(destination, destYr), prob=probs, size =sizes, replace = TRUE),
@@ -27,78 +27,98 @@ server <- function(input, output) {
       as.data.frame()
    return(df) 
   }
+
   
+  #Create function to simulate flow data from origin to destination
+  samp<-function(base=ratings, yr=" 2012-2013", probs=c(.1,.75,.1,.05)){
+    
+    df<-sample(paste0(base, yr), prob=probs, replace = TRUE)
+  
+    return(df) 
+  }
+  
+  
+    
   #Simulate Data Entry in 2012, 2013, 2014
-  entry <-reactive({
-    rbind(
-    originDestination(origin = programs, originYr="", destination=c("DOE Entry 2012-2013"), destYr = "", size=1500, probs = NULL),
-    originDestination(origin = programs, originYr="", destination=c("DOE Entry 2013-2014"), destYr = "", size=400, probs = NULL, year=2013),
-    originDestination(origin = programs, originYr="", destination=c("DOE Entry 2014-2015"), destYr = "", size=200, probs = NULL, year=2014),
-    originDestination(origin = programs, originYr="", destination=c("DOE Entry 2015-2016"), destYr = "", size=125, probs = NULL, year=2015),
-    originDestination(origin = programs, originYr="", destination=c("DOE Entry 2016-2017"), destYr = "", size=125, probs = NULL, year=2016)
-    )%>%
-    filter(origins %in% c(input$tppInput), entryYear==input$yearInput)
+  entry <-rbind(originDestination(origin = programs, originYr="", destination=c("DOE Entry 2012-2013"), destYr = "", probs = NULL),
+                originDestination(origin = programs, originYr="", destination=c("DOE Entry 2013-2014"), destYr = "", size=400, probs = NULL, year=2013),
+                originDestination(origin = programs, originYr="", destination=c("DOE Entry 2014-2015"), destYr = "", size=200, probs = NULL, year=2014),
+                originDestination(origin = programs, originYr="", destination=c("DOE Entry 2015-2016"), destYr = "", size=125, probs = NULL, year=2015),
+                originDestination(origin = programs, originYr="", destination=c("DOE Entry 2016-2017"), destYr = "", size=125, probs = NULL, year=2016))
+  
+  ratings<-sample(c(ratings, "Exit"), size=1000, prob=c(.1,.7,.1,.05,.05), replace=TRUE)
+  
+  #Flow from Entry to Ratings in that year
+  entry1 <-entry%>%
+    select(destinations, entryYear)%>%
+    rename(origins=destinations)%>%
+    group_by(entryYear)%>%
+    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear,"-",entryYear+1)), n(), replace=TRUE, prob=NULL))%>%
+    filter(entryYear!=2016)%>%
+    as.data.frame()
+  
+  #Flow from Ratings in Year 1 to Year2
+  df1<-entry1%>%
+    select(destinations, entryYear)%>%
+    rename(origins=destinations)%>%
+    filter(entryYear!=2015, substr(origins,1,4)!="Exit")%>%
+    group_by(entryYear)%>%
+    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear+1,"-",entryYear+2)), n(), replace=TRUE, prob=NULL))%>%
+    as.data.frame()
+  
+  
+  # #Flow from Ratings in Year 2 to Year 3
+  df2 <-df1%>%
+    select(destinations, entryYear)%>%
+    rename(origins=destinations)%>%
+    filter(entryYear!=2014, substr(origins,1,4)!="Exit")%>%
+    group_by(entryYear)%>%
+    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear+2,"-",entryYear+3)), n(), replace=TRUE, prob=NULL))%>%
+    as.data.frame()
+  
+  # #Flow from Ratings in Year 2 to Year 3
+  df3 <-df2%>%
+    select(destinations, entryYear)%>%
+    rename(origins=destinations)%>%
+    filter(entryYear!=2013, substr(origins,1,4)!="Exit")%>%
+    group_by(entryYear)%>%
+    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear+3,"-",entryYear+4)), n(), replace=TRUE, prob=NULL))%>%
+    as.data.frame()
+
+  #Add reactivity
+  entryR <-reactive({
+    entry%>%
+      filter(origins %in% c(input$tppInput), entryYear==input$yearInput)
   })
   
   #Count the number of rows we want to simulate based on the reactive filters
-  rows<-reactive({c(nrow(entry()))})
-  
-  #Flow from Entry to Ratings in that year
-  entry1 <- reactive({
-    rbind(
-    originDestination(origin="DOE Entry 2012-2013", originYr = "", destYr = " 2012-2013"),
-    originDestination(origin="DOE Entry 2013-2014", originYr = "", destYr = " 2013-2014", year=2013),
-    originDestination(origin="DOE Entry 2014-2015", originYr = "", destYr = " 2014-2015", year=2014),
-    originDestination(origin="DOE Entry 2015-2016", originYr = "", destYr = " 2015-2016", year=2015))%>%
+  rows<-reactive({c(nrow(entryR()))})  
+      
+  #Add reactivity
+  entry1R <-reactive({
+    entry1%>%
     filter(entryYear==input$yearInput)
+  })
 
-    # data_frame(origins = sample(c("DOE Entry 2012-2013"), size = rows(), replace = TRUE),
-    #                    destinations = sample(paste(ratings, "2013-2014"),prob=c(.1,.75,.1,.05), size =rows(), replace = TRUE))
-  })
-  observe(print(table(entry1()$destination)))
-  #Flow from Ratings in Year 1 to Year2
-  df1<- reactive({
-    rbind(
-    originDestination(originYr = " 2012-2013", destination = c(ratings, "Exit"), destYr = " 2013-2014", probs=NULL),
-    originDestination(originYr = " 2013-2014", destination = c(ratings, "Exit"), destYr = " 2014-2015", probs=NULL, year=2013),
-    originDestination(originYr = " 2014-2015", destination = c(ratings, "Exit"), destYr = " 2015-2016", probs=NULL, year=2014))%>%
-    filter(entryYear==input$yearInput)
-    # data_frame(origins = sample(paste(ratings, "2013-2014"), size = rows(), replace = TRUE), 
-    #                 destinations = sample(paste(c(ratings,"Exit"), "2014-2015"),prob=c(.1,.65,.1,.05, .1), size = rows(), replace = TRUE))
-  })
-  observe(print(table(df1()$destination)))
-  
-  #Flow from Ratings in Year 2 to Year 3
-  df2 <-  reactive({
-    rbind(
-    originDestination(originYr = " 2013-2014",destination = c(ratings, "Exit"), destYr = " 2014-2015",probs=c(.1,.65,.1,.05,.1)),
-    originDestination(originYr = " 2014-2015",destination = c(ratings, "Exit"), destYr = " 2015-2016",probs=NULL, year=2013))%>%
-    filter(entryYear==input$yearInput)
-    
-    # data_frame(origins = sample(paste(ratings, "2014-2015"), size = rows(), replace = TRUE), 
-    #                 destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = rows(), replace = TRUE))
-  })
-  
-  #Flow from Ratings in Year 2 to Year 3
-  df3 <-  reactive({
-    rbind(
-      originDestination(originYr = " 2014-2015",destination = c(ratings, "Exit"), destYr = " 2015-2016",probs=c(.15,.55,.15,.05,.1)))%>%
+  df1R <-reactive({
+    df1%>%
       filter(entryYear==input$yearInput)
-    # data_frame(origins = sample(paste(ratings, "2014-2015"), size = rows(), replace = TRUE), 
-    #                 destinations = sample(paste(c(ratings, "Exit"), "2015-2016"), size = rows(), replace = TRUE))
   })
-  
-  #Flow from Exit to Exit Reason
-  # dfD <-reactive({
-  #   data_frame(origins = sample(c('Exit 2016-2016'), size = 100, replace = TRUE),
-  #              destinations = sample(paste(ratings, "2012-2013"), size = 100, replace = TRUE),
-  #              entryYear=1000)
-  # })
-  
+
+  df2R <-reactive({
+    df2%>%
+      filter(entryYear==input$yearInput)
+  })
+
+  df3R <-reactive({
+    df3%>%
+      filter(entryYear==input$yearInput)
+  })
+
   #Stack flow dataframes
   flow<-reactive({
-    entry()%>%
-    rbind(entry1(), df1(), df2(), df3())%>%
+    entryR()%>%
+    rbind(entry1R(), df1R(), df2R(), df3R())%>%
     as.data.frame()
   })
 
@@ -150,10 +170,8 @@ server <- function(input, output) {
   } else{
     
     opts <- paste0("{
-        link: { colorMode: 'source',
-                color: { fill: 'lightgray', fillOpacity: 0.1},
-                node:{nodePadding: 5, label:{fontSize: 14}, interactivity: true, width: 20}}
-      }" )
+        link: {colorMode:'source', color: {fillOpacity: 0.7}},
+                node:{nodePadding: 50, label:{fontSize: 13}, interactivity: true, width: 20}}" )
     
     ##Generate sankey diagram using googleVis
     # sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
@@ -181,7 +199,7 @@ server <- function(input, output) {
 ###############################
   
   filtered<-reactive({
-    df1()%>%
+    df1R()%>%
     mutate(total=n()) %>%
     group_by(destinations, total) %>%
     summarise(look=n())%>%
@@ -201,7 +219,7 @@ server <- function(input, output) {
   })
   
   exit1<-reactive({
-    df1()%>%
+    df1R()%>%
     filter(substr(destinations,1,4)=="Exit")%>%
     count()
   })
@@ -216,7 +234,7 @@ server <- function(input, output) {
   })
   
   exit2<-reactive({
-    df2()%>%
+    df2R()%>%
       filter(substr(destinations,1,4)=="Exit")%>%
       count()
   })

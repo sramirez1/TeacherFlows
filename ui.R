@@ -15,7 +15,7 @@ sidebar<-dashboardSidebar(
     selectInput("yearInput", "Year of DOE Entry",choices = c(2012, 2013, 2014, 2015, 2016)),
     checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers'), selected=c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')),
     selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00x001", "00X002","00X003")),
-    menuItem("Dashboard", tabName = "dashboard"),
+    menuItem("River", tabName = "dashboard"),
     menuItem("Streamgraph", tabName = "dashboard")
     )
   )
