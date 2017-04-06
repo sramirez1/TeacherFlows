@@ -44,81 +44,83 @@ server <- function(input, output) {
                 originDestination(origin = programs, originYr="", destination=c("DOE Entry 2013-2014"), destYr = "", size=400, probs = NULL, year=2013),
                 originDestination(origin = programs, originYr="", destination=c("DOE Entry 2014-2015"), destYr = "", size=200, probs = NULL, year=2014),
                 originDestination(origin = programs, originYr="", destination=c("DOE Entry 2015-2016"), destYr = "", size=125, probs = NULL, year=2015),
-                originDestination(origin = programs, originYr="", destination=c("DOE Entry 2016-2017"), destYr = "", size=125, probs = NULL, year=2016))
+                originDestination(origin = programs, originYr="", destination=c("DOE Entry 2016-2017"), destYr = "", size=125, probs = NULL, year=2016))%>%
+    mutate(program=origins)
   
   ratings<-sample(c(ratings, "Exit"), size=1000, prob=c(.1,.7,.1,.05,.05), replace=TRUE)
   
   #Flow from Entry to Ratings in that year
   entry1 <-entry%>%
-    select(destinations, entryYear)%>%
+    select(destinations, entryYear, program)%>%
     rename(origins=destinations)%>%
     group_by(entryYear)%>%
     mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear,"-",entryYear+1)), n(), replace=TRUE, prob=NULL))%>%
     filter(entryYear!=2016)%>%
     as.data.frame()
   
+  
   #Flow from Ratings in Year 1 to Year2
   df1<-entry1%>%
-    select(destinations, entryYear)%>%
+    select(destinations, entryYear, program)%>%
     rename(origins=destinations)%>%
     filter(entryYear!=2015, substr(origins,1,4)!="Exit")%>%
     group_by(entryYear)%>%
-    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear+1,"-",entryYear+2)), n(), replace=TRUE, prob=NULL))%>%
+    mutate(destinations=paste0(sample(ratings, n(), replace=TRUE, prob=NULL),paste0(" ",entryYear+1,"-",entryYear+2)))%>%
     as.data.frame()
   
   
   # #Flow from Ratings in Year 2 to Year 3
   df2 <-df1%>%
-    select(destinations, entryYear)%>%
+    select(destinations, entryYear,program)%>%
     rename(origins=destinations)%>%
     filter(entryYear!=2014, substr(origins,1,4)!="Exit")%>%
     group_by(entryYear)%>%
-    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear+2,"-",entryYear+3)), n(), replace=TRUE, prob=NULL))%>%
+    mutate(destinations=paste0(sample(ratings, n(), replace=TRUE, prob=NULL),paste0(" ",entryYear+2,"-",entryYear+3)))%>%
     as.data.frame()
-  
+
   # #Flow from Ratings in Year 2 to Year 3
   df3 <-df2%>%
-    select(destinations, entryYear)%>%
+    select(destinations, entryYear,program)%>%
     rename(origins=destinations)%>%
     filter(entryYear!=2013, substr(origins,1,4)!="Exit")%>%
     group_by(entryYear)%>%
-    mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear+3,"-",entryYear+4)), n(), replace=TRUE, prob=NULL))%>%
+    mutate(destinations=paste0(sample(ratings, n(), replace=TRUE, prob=NULL),paste0(" ",entryYear+3,"-",entryYear+4)))%>%
     as.data.frame()
 
   #Add reactivity
   entryR <-reactive({
     entry%>%
-      filter(origins %in% c(input$tppInput), entryYear==input$yearInput)
+      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
   })
   
   #Count the number of rows we want to simulate based on the reactive filters
   rows<-reactive({c(nrow(entryR()))})  
-      
+  
   #Add reactivity
   entry1R <-reactive({
     entry1%>%
-    filter(entryYear==input$yearInput)
+    filter(program %in% c(input$tppInput), entryYear==input$yearInput)
   })
-
+  
   df1R <-reactive({
     df1%>%
-      filter(entryYear==input$yearInput)
+      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
   })
 
   df2R <-reactive({
     df2%>%
-      filter(entryYear==input$yearInput)
+      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
   })
 
   df3R <-reactive({
     df3%>%
-      filter(entryYear==input$yearInput)
+      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
   })
 
   #Stack flow dataframes
   flow<-reactive({
     entryR()%>%
-    rbind(entry1R(), df1R(), df2R(), df3R())%>%
+    rbind(entry1R(), df1R(),df2R(), df3R())%>%
     as.data.frame()
   })
 
