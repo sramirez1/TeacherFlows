@@ -17,7 +17,15 @@ sidebar<-dashboardSidebar(
     selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00x001", "00X002","00X003")),
     menuItem("River", tabName = "dashboard"),
     menuItem("Streamgraph", tabName = "dashboard")
-    )
+    ),
+  helpText(HTML("<b>DISCLAIMER</b>")),
+  helpText(HTML("I contributed to this Shiny app in my own personal capacity.
+                <br><br>
+                The views and content expressed here do not represent the views of the NYC Department of Education.
+                <br><br>
+                All data presented here is <b>FAKE</b> and does not correspond to actual entry, exit, or Advance Rating of NYC Department of Education teachers.")),
+  menuItem("Source code", icon = icon("file-code-o"), 
+           href = "https://github.com/sramirez1/TeacherFlows")
   )
 
 body<-dashboardBody(

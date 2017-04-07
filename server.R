@@ -4,8 +4,6 @@ server <- function(input, output) {
   ##############################
   ###Main Visualization Panel###
   ##############################
-  #Use googleVis sankey?
-  google=TRUE
   
   ##Create temporary dataset for Sankey
   set.seed(1983)
@@ -129,7 +127,8 @@ server <- function(input, output) {
     flow() %>%
     group_by(origins, destinations) %>%
     summarise(counts=n()) %>%
-    ungroup()
+    ungroup()%>%
+    as.data.frame()
   })
     
   #Vector of unique origin and destinations
@@ -148,37 +147,33 @@ server <- function(input, output) {
   colors_link_array <- paste0("[", paste0("'", colors_link,"'", collapse = ','), "]")
   
   links <- reactive({
-    flowCounts()
-    # left_join(nodes(), by = c('origins' = 'name')) %>%
-    # rename(origin_id = id) %>%
-    # left_join(nodes(), by = c('destinations' = 'name')) %>%
-    # rename(dest_id = id)%>%
+    t<-flowCounts()%>%
+    left_join(nodes(), by = c('origins' = 'name')) %>%
+    rename(origin_id = id) %>%
+    left_join(nodes(), by = c('destinations' = 'name')) %>%
+    rename(dest_id = id)
   })
   
 
-  if (google==FALSE){
-    
-    ##Generate sankey diagram using networkD3
-    # sankey<-sankeyNetwork(Links=links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
-    #               Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
-    #               )
+  ##Generate sankey diagram using networkD3
+  # sankey<-sankeyNetwork(Links=links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
+  #               Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
+  #               )
+
+  # output$Sankey2<-renderSankeyNetwork({
+  #   sankeyNetwork(Links=links(), Nodes = nodes(), Source = 'origin_id', Target = 'dest_id',
+  #                 Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000)
+    # })
   
-    output$Sankey<-renderSankeyNetwork(
-      sankeyNetwork(Links=links(), Nodes = nodes(), Source = 'origin_id', Target = 'dest_id',
-                            Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
-                    )
-      )
-    
-  } else{
-    
-    opts <- paste0("{
-        link: {colorMode:'source', color: {fillOpacity: 0.7}},
-                node:{nodePadding: 50, label:{fontSize: 13}, interactivity: true, width: 20}}" )
-    
-    ##Generate sankey diagram using googleVis
-    # sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
-    #                 options=list(title="Hello World", height=800, width=1200,
-    #                              sankey=opts))
+
+  opts <- paste0("{
+      link: {colorMode:'source', color: {fillOpacity: 0.7}},
+              node:{nodePadding: 50, label:{fontSize: 13}, interactivity: true, width: 20}}" )
+  
+  ##Generate sankey diagram using googleVis
+  # sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
+  #                 options=list(title="Hello World", height=800, width=1200,
+  #                              sankey=opts))
 
 
 # "{
@@ -188,14 +183,13 @@ server <- function(input, output) {
 #                     )
 
 
-    output$Sankey<-renderGvis({
-      req(input$tppInput)
-      gvisSankey(links(), from="origins", to="destinations", weight="counts",
-                 options=list(title="Hello World", height=800, width=1600,
-                              sankey=opts))
-      
-      })
-  }
+  output$Sankey<-renderGvis({
+    req(input$tppInput)
+    gvisSankey(flowCounts(), from="origins", to="destinations", weight="counts",
+               options=list(title="Hello World", height=800, width=1600,
+                            sankey=opts))
+    
+    })
 ###############################  
 ### Reactive Summary Table ####
 ###############################
