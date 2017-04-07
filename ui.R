@@ -16,7 +16,7 @@ sidebar<-dashboardSidebar(
     checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers'), selected=c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')),
     selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00x001", "00X002","00X003")),
     menuItem("River", tabName = "dashboard"),
-    menuItem("Streamgraph", tabName = "dashboard")
+    menuItem("Streamgraph", tabName = "d3", badgeLabel = "new", badgeColor="green")
     ),
   helpText(HTML("<b>DISCLAIMER</b>")),
   helpText(HTML("I contributed to this Shiny app in my own personal capacity.
@@ -30,14 +30,14 @@ sidebar<-dashboardSidebar(
 
 body<-dashboardBody(
   tabItems(
-    tabItem("dashboard",
-            
+    tabItem(tabName="dashboard",
+
             fluidRow(
               valueBoxOutput("newHires"),
               valueBoxOutput("exit1"),
-              valueBoxOutput("exit2")             
+              valueBoxOutput("exit2")
             ),
-            
+
             fluidRow(
               box(
                 width = 12, status = "info", solidHeader = TRUE,
@@ -45,12 +45,22 @@ body<-dashboardBody(
                 htmlOutput("Sankey")
               )
             ),
-            
+
             fluidRow(
               box(
                 width = 9, status = "info", solidHeader = TRUE,
                 title = "HEDI Ratings",
                 DT::dataTableOutput("results")
+              )
+            )
+    ),
+    tabItem(tabName= "d3",
+            
+            fluidRow(
+              box(
+                width = 12, status = "info", solidHeader = TRUE,
+                title = "Sankey Flowchart by Entry Year",
+                sankeyNetworkOutput("Sankey2", width="1600px", height="800px")
               )
             )
     )

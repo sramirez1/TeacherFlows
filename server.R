@@ -85,7 +85,36 @@ server <- function(input, output) {
     mutate(destinations=paste0(sample(ratings, n(), replace=TRUE, prob=NULL),paste0(" ",entryYear+3,"-",entryYear+4)))%>%
     as.data.frame()
 
+  ###############################
+  # Section for non-reactive data
+  ###############################
+  #Stack flow dataframes
+  flowd3<-entry%>%
+      rbind(entry1, df1,df2, df3)%>%
+      as.data.frame()
+  
+  #Calculate flow counts by origin and destination
+  flowCountsd3 <-flowd3%>%
+      group_by(origins, destinations)%>%
+      summarise(counts=n())%>%
+      ungroup()%>%
+      as.data.frame()
+  
+  #Vector of unique origin and destinations
+  name_vecd3 <- unique(c(unique(flowCountsd3$origins), unique(flowCountsd3$destinations)))
+  
+  #Map node id to each name
+  nodesd3 <- data.frame(name = name_vecd3, id = 0:(length(name_vecd3)-1))
+  
+  linksd3 <-flowCountsd3%>%
+      left_join(nodesd3, by = c('origins' = 'name')) %>%
+      rename(origin_id = id) %>%
+      left_join(nodesd3, by = c('destinations' = 'name')) %>%
+      rename(dest_id = id)
+  
+  ###############
   #Add reactivity
+  ###############
   entryR <-reactive({
     entry%>%
       filter(program %in% c(input$tppInput), entryYear==input$yearInput)
@@ -160,10 +189,10 @@ server <- function(input, output) {
   #               Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
   #               )
 
-  # output$Sankey2<-renderSankeyNetwork({
-  #   sankeyNetwork(Links=links(), Nodes = nodes(), Source = 'origin_id', Target = 'dest_id',
-  #                 Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000)
-    # })
+  output$Sankey2<-renderSankeyNetwork({
+    sankeyNetwork(Links=linksd3, Nodes = nodesd3, Source = 'origin_id', Target = 'dest_id',
+                  Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE)
+  })
   
 
   opts <- paste0("{
@@ -209,7 +238,7 @@ server <- function(input, output) {
   output$newHires<- renderValueBox({
     valueBox(value=rows(),
              subtitle="New Hires",
-             icon=icon("user"),
+             icon=icon("users"),
              width=NULL
     )
   })
