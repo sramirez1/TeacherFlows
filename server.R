@@ -25,17 +25,6 @@ server <- function(input, output) {
       as.data.frame()
    return(df) 
   }
-
-  
-  #Create function to simulate flow data from origin to destination
-  samp<-function(base=ratings, yr=" 2012-2013", probs=c(.1,.75,.1,.05)){
-    
-    df<-sample(paste0(base, yr), prob=probs, replace = TRUE)
-  
-    return(df) 
-  }
-  
-  
     
   #Simulate Data Entry in 2012, 2013, 2014
   entry <-rbind(originDestination(origin = programs, originYr="", destination=c("DOE Entry 2012-2013"), destYr = "", probs = NULL),
@@ -43,13 +32,14 @@ server <- function(input, output) {
                 originDestination(origin = programs, originYr="", destination=c("DOE Entry 2014-2015"), destYr = "", size=200, probs = NULL, year=2014),
                 originDestination(origin = programs, originYr="", destination=c("DOE Entry 2015-2016"), destYr = "", size=125, probs = NULL, year=2015),
                 originDestination(origin = programs, originYr="", destination=c("DOE Entry 2016-2017"), destYr = "", size=125, probs = NULL, year=2016))%>%
-    mutate(program=origins)
+    mutate(program=origins,
+           DBN=paste0("00","X",sprintf("%03d",sample(c(1:300), n(), replace=TRUE))))
   
   ratings<-sample(c(ratings, "Exit"), size=1000, prob=c(.1,.7,.1,.05,.05), replace=TRUE)
   
   #Flow from Entry to Ratings in that year
   entry1 <-entry%>%
-    select(destinations, entryYear, program)%>%
+    select(destinations, entryYear, program, DBN)%>%
     rename(origins=destinations)%>%
     group_by(entryYear)%>%
     mutate(destinations=sample(paste0(ratings, yr=paste0(" ",entryYear,"-",entryYear+1)), n(), replace=TRUE, prob=NULL))%>%
@@ -59,7 +49,7 @@ server <- function(input, output) {
   
   #Flow from Ratings in Year 1 to Year2
   df1<-entry1%>%
-    select(destinations, entryYear, program)%>%
+    select(destinations, entryYear, program, DBN)%>%
     rename(origins=destinations)%>%
     filter(entryYear!=2015, substr(origins,1,4)!="Exit")%>%
     group_by(entryYear)%>%
@@ -69,7 +59,7 @@ server <- function(input, output) {
   
   # #Flow from Ratings in Year 2 to Year 3
   df2 <-df1%>%
-    select(destinations, entryYear,program)%>%
+    select(destinations, entryYear,program, DBN)%>%
     rename(origins=destinations)%>%
     filter(entryYear!=2014, substr(origins,1,4)!="Exit")%>%
     group_by(entryYear)%>%
@@ -78,7 +68,7 @@ server <- function(input, output) {
 
   # #Flow from Ratings in Year 2 to Year 3
   df3 <-df2%>%
-    select(destinations, entryYear,program)%>%
+    select(destinations, entryYear,program, DBN)%>%
     rename(origins=destinations)%>%
     filter(entryYear!=2013, substr(origins,1,4)!="Exit")%>%
     group_by(entryYear)%>%
@@ -116,39 +106,72 @@ server <- function(input, output) {
   #Add reactivity
   ###############
   entryR <-reactive({
-    entry%>%
-      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
+    if (input$dbnInput!="All DBNs"){
+      entry%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput, DBN==input$dbnInput) 
+    }else {
+      entry%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput) 
+    }
   })
   
   #Count the number of rows we want to simulate based on the reactive filters
   rows<-reactive({c(nrow(entryR()))})  
-  
+
   #Add reactivity
   entry1R <-reactive({
-    entry1%>%
-    filter(program %in% c(input$tppInput), entryYear==input$yearInput)
+    if (input$dbnInput!="All DBNs"){
+      entry1%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput, DBN==input$dbnInput) 
+    }else {
+      entry1%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput) 
+    }
   })
   
   df1R <-reactive({
-    df1%>%
-      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
+    if (input$dbnInput!="All DBNs"){
+      df1%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput, DBN==input$dbnInput) 
+    }else {
+      df1%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput) 
+    }
   })
 
   df2R <-reactive({
-    df2%>%
-      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
+    if (input$dbnInput!="All DBNs"){
+      df2%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput, DBN==input$dbnInput) 
+    }else {
+      df2%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput) 
+    }
   })
 
   df3R <-reactive({
-    df3%>%
-      filter(program %in% c(input$tppInput), entryYear==input$yearInput)
+    if (input$dbnInput!="All DBNs"){
+      df3%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput, DBN==input$dbnInput) 
+    }else {
+      df3%>%
+        filter(program %in% c(input$tppInput), entryYear==input$yearInput) 
+    }
   })
 
   #Stack flow dataframes
   flow<-reactive({
-    entryR()%>%
-    rbind(entry1R(), df1R(),df2R(), df3R())%>%
-    as.data.frame()
+    # if (input$dbnInput!="All DBNs"){
+    #   entryR()%>%
+    #     rbind(entry1R(), df1R(),df2R(), df3R())%>%
+    #     as.data.frame()%>%
+    #     filter(DBN==input$dbnInput)
+    # }else {
+      entryR()%>%
+        rbind(entry1R(), df1R(),df2R(), df3R())%>%
+        as.data.frame()
+    # }
+
   })
 
   #Calculate flow counts by origin and destination
@@ -214,9 +237,19 @@ server <- function(input, output) {
 
   output$Sankey<-renderGvis({
     req(input$tppInput)
-    gvisSankey(flowCounts(), from="origins", to="destinations", weight="counts",
-               options=list(title="Hello World", height=800, width=1600,
+    if (rows()<=5){
+      gvisSankey(flowCounts(), from="origins", to="destinations", weight="counts",
+                 options=list(height=200, width=1600,
+                              sankey=opts))
+    }else if(rows()<=15){
+      gvisSankey(flowCounts(), from="origins", to="destinations", weight="counts",
+               options=list(height=400, width=1600,
                             sankey=opts))
+    }else {
+      gvisSankey(flowCounts(), from="origins", to="destinations", weight="counts",
+                 options=list(height=800, width=1600,
+                              sankey=opts))
+    }
     
     })
 ###############################  
