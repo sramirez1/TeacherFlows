@@ -56,10 +56,11 @@ body<-dashboardBody(
             ),
             
             fluidRow(
-              box(
-                width = 12, status = "info", solidHeader = TRUE,
-                title = "Sankey Flowchart Across Time",
-                sankeyNetworkOutput("Sankey2", width="1600px", height="800px")
+              box(width = 12,
+                  status = "info",
+                  solidHeader = TRUE,
+                  title = "Sankey Flowchart Across Time",
+                  sankeyNetworkOutput("Sankey2", width="1600px", height="800px")
               )
             )
     )

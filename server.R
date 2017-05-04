@@ -257,8 +257,8 @@ server <- function(input, output) {
                   colourScale = JS(paste0("d3.scaleOrdinal()
                                           .domain([",codesJS,"])
                                           .range(['#78a8e1','#BAE58A','#FFC76B','#F8EE6E','#9933FF'])
-                       
-                                                             .unknown(['#ccc'])"))
+                                          .unknown(['#ccc'])")
+                                   )
                   )
   })
   
