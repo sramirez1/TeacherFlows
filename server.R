@@ -115,6 +115,7 @@ server <- function(input, output) {
   
   codesJS <- paste(shQuote(codes, type = "sh"), collapse = ' , ')
   
+  observe({class(year(input$dateEnd))})
 
 
   ##Generate sankey diagram using networkD3
@@ -131,10 +132,13 @@ server <- function(input, output) {
     entryR <- 
       if (input$dbnInput != "All DBNs"){
         entry %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+                 DBN == input$dbnInput) 
       }else {
         entry %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd)) 
       }
     
     #Count the number of rows we want to simulate based on the reactive filters
@@ -144,37 +148,49 @@ server <- function(input, output) {
     entry1R <-
       if (input$dbnInput != "All DBNs"){
         entry1 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+                 DBN == input$dbnInput) 
       }else {
         entry1 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd)) 
       }
     
     df1R <-
       if (input$dbnInput != "All DBNs"){
         df1 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+                 DBN == input$dbnInput) 
       }else {
         df1 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd)) 
       }
     
     df2R <- 
       if (input$dbnInput != "All DBNs"){
         df2 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+                 DBN == input$dbnInput) 
       }else {
         df2 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd)) 
       }
     
     df3R <-
       if (input$dbnInput != "All DBNs"){
         df3 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+                 DBN == input$dbnInput) 
       }else {
         df3 %>%
-          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+          filter(program %in% c(input$tppInput),
+                 entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd))
       }
     
     #Stack flow dataframes
@@ -246,40 +262,21 @@ server <- function(input, output) {
                   )
   })
   
-
-  opts <- paste0("{iterations : 0,
-      link: {colorMode:'source', color: {fillOpacity: 0.7}},
-              node:{nodePadding: 50, label:{fontSize: 13}, interactivity: true, width: 20}}" )
-  
-  ##Generate sankey diagram using googleVis
-  # sankey<-gvisSankey(links, from="origins", to="destinations", weight="counts",
-  #                 options=list(title="Hello World", height=800, width=1200,
-  #                              sankey=opts))
-
-
-# "{
-#                                link:{color:{fill: 'lightgray', fillOpacity: 0.5}},
-#                                node:{nodePadding: 5, label:{fontSize: 12}, interactivity: true, width: 20},
-#                                }")
-#                     )
-
-
-  output$Sankey <- renderGvis({
-    req(input$tppInput)
-    if (rows() <= 5){
-      gvisSankey(flowCounts(), from = "origins", to = "destinations", 
-                 weight = "counts", options = list(height = 200, width = 1600, sankey = opts))
-    }else if(rows() <= 15){
-      gvisSankey(flowCounts(), from = "origins", to = "destinations", weight = "counts",
-               options = list(height = 400, width = 1600, sankey = opts))
-    }else {
-      gvisSankey(flowCounts(), from = "origins", to = "destinations", weight = "counts",
-                 options = list(height = 800, width = 1600, sankey = opts))
-    }
-    })
 ###############################  
 ### Reactive Summary Table ####
 ###############################
+  df1R <- reactive({
+    if (input$dbnInput != "All DBNs"){
+      df1 %>%
+        filter(program %in% c(input$tppInput),
+               entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+               DBN == input$dbnInput) 
+    }else {
+      df1 %>%
+        filter(program %in% c(input$tppInput),
+               entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd))
+    }
+  })
   
   filtered <- reactive({
     df1R() %>%
@@ -293,23 +290,56 @@ server <- function(input, output) {
 ############################  
 ### Reactive Value Boxes ###
 ############################
+  entryR <- reactive({
+    if (input$dbnInput != "All DBNs"){
+      entry %>%
+        filter(program %in% c(input$tppInput),
+               entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+               DBN == input$dbnInput) 
+    }else {
+      entry %>%
+        filter(program %in% c(input$tppInput),
+               entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd)) 
+    }
+  })
+  
+  #Count the number of rows we want to simulate based on the reactive filters
+  rows <- reactive({
+    c(nrow(entryR()))
+  })
+
   output$newHires <- renderValueBox({
     valueBox(value = rows(),
+    # valueBox(value = 1000,
              subtitle = "New Hires",
              icon = icon("users"),
-             width = NULL
+             width = 4
     )
   })
   
+  entry1R <- reactive({
+    if (input$dbnInput != "All DBNs"){
+      entry1 %>%
+        filter(program %in% c(input$tppInput),
+               entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd),
+               DBN == input$dbnInput) 
+    }else {
+      entry1 %>%
+        filter(program %in% c(input$tppInput),
+               entryYear >= year(input$dateStart) & entryYear <= year(input$dateEnd))
+    }
+  })
+  
   exit1 <- reactive({
-    df1R() %>%
-    filter(substr(destinations,1,4) == "Exit") %>%
+    entry1R() %>%
+    filter(substr(destinations,1,6) == "5.Exit") %>%
     count()
   })
   
   output$exit1 <- renderValueBox({
     valueBox(value = exit1(),
-             subtitle = "Exits after Year 1",
+    # valueBox(value = 1000,
+             subtitle = "Exits after 1 Year Teaching",
              icon = icon("sign-out"),
              width = NULL,
              color = "purple"
@@ -317,18 +347,18 @@ server <- function(input, output) {
   })
   
   exit2 <- reactive({
-    df2R() %>%
-      filter(substr(destinations,1,4) == "Exit") %>%
+    df1R() %>%
+      filter(substr(destinations,1,6) == "5.Exit") %>%
       count()
   })
 
   output$exit2 <- renderValueBox({
     valueBox(value = exit2(),
-             subtitle = "Exits after Year 2",
+    # valueBox(value = 1000,
+             subtitle = "Exits after 2 Years Teaching",
              icon = icon("sign-out"),
              width = NULL,
              color = "yellow"
     )
   })
-  
-}
+  }
