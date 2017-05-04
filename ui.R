@@ -2,7 +2,7 @@
 library(shiny)
 library(dplyr)
 library(googleVis)
-library(networkD3)
+library(sankeyD3, lib.loc = .libPaths()[2])
 library(DT)
 library(shinydashboard)
 library(babynames)
@@ -12,6 +12,23 @@ header<-dashboardHeader(title="The River of Teachers ALPHA", titleWidth = 350)
 
 sidebar<-dashboardSidebar(
   sidebarMenu(
+    
+    dateInput('dateStart',
+      label = paste('Start Date: '),
+      value = as.character(Sys.Date()),
+      min = "2012-09-01", max = "2017-09-01",
+      format = "mm/dd/yyyy",
+      startview = 'year', weekstart = 1, language = "de"
+    ),
+    
+    dateInput('dateEnd',
+              label = paste('End Date: '),
+              value = as.character(Sys.Date()),
+              min = "2012-09-01", max = "2017-09-01",
+              format = "mm/dd/yyyy",
+              startview = 'year', weekstart = 1, language = "de"
+    ),    
+    
     selectInput("yearInput", "Year of DOE Entry",choices = c(2012, 2013, 2014, 2015, 2016)),
     checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers'), selected=c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')),
     selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00X001", "00X002","00X003")),

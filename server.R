@@ -9,7 +9,7 @@ server <- function(input, output) {
   set.seed(1983)
   
   #Vector of rating categories
-  ratings <- c('Highly Effective', 'Effective', 'Developing', 'Ineffective')
+  ratings <- c('1.Highly Effective', '2.Effective', '3.Developing', '4.Ineffective')
   
   #Vector of Teacher Preparation Programs
   programs <- c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')
@@ -35,7 +35,7 @@ server <- function(input, output) {
     mutate(program = origins,
            DBN = paste0("00","X",sprintf("%03d",sample(c(1:300), n(), replace = TRUE))))
   
-  ratings <- sample(c(ratings, "Exit"), size = 1000, prob = c(.1,.7,.1,.05,.05), replace = TRUE)
+  ratings <- sample(c(ratings, "5.Exit"), size = 1000, prob = c(.1,.7,.1,.05,.05), replace = TRUE)
   
   #Flow from Entry to Ratings in that year
   entry1 <- entry %>%
@@ -51,7 +51,7 @@ server <- function(input, output) {
   df1 <- entry1 %>%
     select(destinations, entryYear, program, DBN) %>%
     rename(origins = destinations) %>%
-    filter(entryYear != 2015, substr(origins,1,4) != "Exit") %>%
+    filter(entryYear != 2015, substr(origins,1,6) != "5.Exit") %>%
     group_by(entryYear) %>%
     mutate(destinations = paste0(sample(ratings, n(), replace = TRUE, prob = NULL),paste0(" ",entryYear + 1,"-",entryYear + 2))) %>%
     as.data.frame()
@@ -61,7 +61,7 @@ server <- function(input, output) {
   df2 <- df1 %>%
     select(destinations, entryYear,program, DBN) %>%
     rename(origins = destinations) %>%
-    filter(entryYear != 2014, substr(origins,1,4) != "Exit") %>%
+    filter(entryYear != 2014, substr(origins,1,6) != "5.Exit") %>%
     group_by(entryYear) %>%
     mutate(destinations = paste0(sample(ratings, n(), replace = TRUE, prob = NULL),paste0(" ",entryYear + 2,"-",entryYear + 3))) %>%
     as.data.frame()
@@ -70,7 +70,7 @@ server <- function(input, output) {
   df3 <- df2 %>%
     select(destinations, entryYear,program, DBN) %>%
     rename(origins = destinations) %>%
-    filter(entryYear != 2013, substr(origins,1,4) != "Exit") %>%
+    filter(entryYear != 2013, substr(origins,1,6) != "5.Exit") %>%
     group_by(entryYear) %>%
     mutate(destinations = paste0(sample(ratings, n(), replace = TRUE, prob = NULL),paste0(" ",entryYear + 3,"-",entryYear + 4))) %>%
     as.data.frame()
@@ -101,6 +101,20 @@ server <- function(input, output) {
       rename(origin_id = id) %>%
       left_join(nodesd3, by = c('destinations' = 'name')) %>%
       rename(dest_id = id)
+  
+  #Vector of rating categories
+  ratings <- c('1.Highly Effective', '2.Effective', '3.Developing', '4.Ineffective', '5.Exit')
+  
+  #Convert origins and destinations to factor
+  codes <- c(paste0(ratings, " 2012-2013"),
+             paste0(ratings, " 2013-2014"),
+             paste0(ratings, " 2014-2015"),
+             paste0(ratings, " 2015-2016"))
+  
+  codes<- factor(codes, levels = codes)
+  
+  codesJS <- paste(shQuote(codes, type = "sh"), collapse = ' , ')
+  
   
   ###############
   #Add reactivity
@@ -212,13 +226,38 @@ server <- function(input, output) {
   #               )
 
   output$Sankey2 <- renderSankeyNetwork({
-    sankeyNetwork(Links = linksd3, Nodes = nodesd3, Source = 'origin_id',
-                  Target = 'dest_id', Value = 'counts', NodeID = 'name',
-                  fontSize = 16, sinksRight = FALSE)
+    sankeyNetwork(Links = linksd3,
+                  Nodes = nodesd3,
+                  Source = 'origin_id',
+                  Target = 'dest_id', 
+                  Value = 'counts',
+                  NodeID = 'name',
+                  # NodePosX = 'id',
+                  LinkGroup = 'origins',
+                  linkGradient = TRUE,
+                  fontSize = 16,
+                  fontFamily = "Helvetica",
+                  highlightChildLinks = TRUE,
+                  doubleclickTogglesChildren = TRUE,
+                  zoom = TRUE,
+                  showNodeValues = FALSE,
+                  orderByPath = TRUE,
+                  dragX = TRUE,
+                  dragY = TRUE,
+                  align = "left", 
+                  curvature = .8,
+                  linkOpacity = 0.25,
+                  nodeLabelMargin = 5,
+                  xScalingFactor = 1,
+                  colourScale = JS(paste0("d3.scaleOrdinal()
+                                          .domain([",codesJS,"])
+                                          .range(['#78a8e1','#BAE58A','#FFC76B','#F8EE6E','#9933FF'])
+                                          .unknown(['#ccc'])"))
+                  )
   })
   
 
-  opts <- paste0("{
+  opts <- paste0("{iterations : 0,
       link: {colorMode:'source', color: {fillOpacity: 0.7}},
               node:{nodePadding: 50, label:{fontSize: 13}, interactivity: true, width: 20}}" )
   
@@ -238,7 +277,7 @@ server <- function(input, output) {
   output$Sankey <- renderGvis({
     req(input$tppInput)
     if (rows() <= 5){
-      gvisSankey(flowCounts(), from = "origins", to = "destinations",
+      gvisSankey(flowCounts(), from = "origins", to = "destinations", 
                  weight = "counts", options = list(height = 200, width = 1600, sankey = opts))
     }else if(rows() <= 15){
       gvisSankey(flowCounts(), from = "origins", to = "destinations", weight = "counts",
