@@ -115,110 +115,7 @@ server <- function(input, output) {
   
   codesJS <- paste(shQuote(codes, type = "sh"), collapse = ' , ')
   
-  
-  ###############
-  #Add reactivity
-  ###############
-  entryR <- reactive({
-    if (input$dbnInput != "All DBNs"){
-      entry %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
-    }else {
-      entry %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
-    }
-  })
-  
-  #Count the number of rows we want to simulate based on the reactive filters
-  rows <- reactive({c(nrow(entryR()))})  
 
-  #Add reactivity
-  entry1R <- reactive({
-    if (input$dbnInput != "All DBNs"){
-      entry1 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
-    }else {
-      entry1 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
-    }
-  })
-  
-  df1R <- reactive({
-    if (input$dbnInput != "All DBNs"){
-      df1 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
-    }else {
-      df1 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
-    }
-  })
-
-  df2R <- reactive({
-    if (input$dbnInput != "All DBNs"){
-      df2 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
-    }else {
-      df2 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
-    }
-  })
-
-  df3R <- reactive({
-    if (input$dbnInput != "All DBNs"){
-      df3 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
-    }else {
-      df3 %>%
-        filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
-    }
-  })
-
-  #Stack flow dataframes
-  flow <- reactive({
-    # if (input$dbnInput!="All DBNs"){
-    #   entryR()%>%
-    #     rbind(entry1R(), df1R(),df2R(), df3R())%>%
-    #     as.data.frame()%>%
-    #     filter(DBN==input$dbnInput)
-    # }else {
-    entryR() %>%
-      rbind(entry1R(), df1R(),df2R(), df3R()) %>%
-      as.data.frame()
-    # }
-  })
-
-  #Calculate flow counts by origin and destination
-  flowCounts <- reactive({
-    flow() %>%
-    group_by(origins, destinations) %>%
-    summarise(counts = n()) %>%
-    ungroup() %>%
-    as.data.frame()
-  })
-    
-  #Vector of unique origin and destinations
-  name_vec <- reactive({
-    unique(c(unique(flowCounts()$origins), unique(flowCounts()$destinations)))
-  })
-  
-  #Map node id to each name
-  nodes <- reactive({
-    data.frame(name = name_vec, id = 0:(length(name_vec) - 1))
-  })
-
-
-  #Add colors to links
-  colors_link <- c('green', 'blue', 'yellow', 'brown', 'red')
-  colors_link_array <- paste0("[", paste0("'", colors_link,"'", collapse = ','), "]")
-  
-  links <- reactive({
-    t <- flowCounts() %>%
-    left_join(nodes(), by = c('origins' = 'name')) %>%
-    rename(origin_id = id) %>%
-    left_join(nodes(), by = c('destinations' = 'name')) %>%
-    rename(dest_id = id)
-  })
-  
 
   ##Generate sankey diagram using networkD3
   # sankey<-sankeyNetwork(Links=links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
@@ -226,8 +123,99 @@ server <- function(input, output) {
   #               )
 
   output$Sankey2 <- renderSankeyNetwork({
-    sankeyNetwork(Links = linksd3,
-                  Nodes = nodesd3,
+    
+    
+    ###############
+    #Add reactivity
+    ###############
+    entryR <- 
+      if (input$dbnInput != "All DBNs"){
+        entry %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+      }else {
+        entry %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+      }
+    
+    #Count the number of rows we want to simulate based on the reactive filters
+    rows <- c(nrow(entryR))
+    
+    #Add reactivity
+    entry1R <-
+      if (input$dbnInput != "All DBNs"){
+        entry1 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+      }else {
+        entry1 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+      }
+    
+    df1R <-
+      if (input$dbnInput != "All DBNs"){
+        df1 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+      }else {
+        df1 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+      }
+    
+    df2R <- 
+      if (input$dbnInput != "All DBNs"){
+        df2 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+      }else {
+        df2 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+      }
+    
+    df3R <-
+      if (input$dbnInput != "All DBNs"){
+        df3 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput, DBN == input$dbnInput) 
+      }else {
+        df3 %>%
+          filter(program %in% c(input$tppInput), entryYear == input$yearInput) 
+      }
+    
+    #Stack flow dataframes
+    flow <- 
+      # if (input$dbnInput!="All DBNs"){
+      #   entryR()%>%
+      #     rbind(entry1R(), df1R(),df2R(), df3R())%>%
+      #     as.data.frame()%>%
+      #     filter(DBN==input$dbnInput)
+      # }else {
+      entryR %>%
+        rbind(entry1R, df1R,df2R, df3R) %>%
+        as.data.frame()
+      # }
+    
+    #Calculate flow counts by origin and destination
+    flowCounts <- flow %>%
+        group_by(origins, destinations) %>%
+        summarise(counts = n()) %>%
+        ungroup() %>%
+        as.data.frame()
+    
+    #Vector of unique origin and destinations
+    name_vec <- unique(c(unique(flowCounts$origins), unique(flowCounts$destinations)))
+    
+    #Map node id to each name
+    nodes <- data.frame(name = name_vec, id = 0:(length(name_vec) - 1))
+    
+    
+    #Add colors to links
+    colors_link <- c('green', 'blue', 'yellow', 'brown', 'red')
+    colors_link_array <- paste0("[", paste0("'", colors_link,"'", collapse = ','), "]")
+    
+    links <- flowCounts %>%
+        left_join(nodes, by = c('origins' = 'name')) %>%
+        rename(origin_id = id) %>%
+        left_join(nodes, by = c('destinations' = 'name')) %>%
+        rename(dest_id = id)
+    
+    sankeyNetwork(Links = links,
+                  Nodes = nodes,
                   Source = 'origin_id',
                   Target = 'dest_id', 
                   Value = 'counts',
@@ -244,15 +232,17 @@ server <- function(input, output) {
                   orderByPath = TRUE,
                   dragX = TRUE,
                   dragY = TRUE,
-                  align = "left", 
+                  align = "center", 
                   curvature = .8,
                   linkOpacity = 0.25,
                   nodeLabelMargin = 5,
                   xScalingFactor = 1,
+                  # scaleNodeBreadthsByString = TRUE,
                   colourScale = JS(paste0("d3.scaleOrdinal()
                                           .domain([",codesJS,"])
                                           .range(['#78a8e1','#BAE58A','#FFC76B','#F8EE6E','#9933FF'])
-                                          .unknown(['#ccc'])"))
+                       
+                                                             .unknown(['#ccc'])"))
                   )
   })
   
