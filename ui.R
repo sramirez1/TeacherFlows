@@ -2,14 +2,14 @@
 library(shiny)
 library(dplyr)
 library(googleVis)
-library(sankeyD3, lib.loc = .libPaths()[2])
+library(sankeyD3)
 library(DT)
 library(shinydashboard)
 library(babynames)
 library(lubridate)
 #Use googleVis sankey?
 google=TRUE
-header<-dashboardHeader(title="The River of Teachers ALPHA", titleWidth = 350)
+header<-dashboardHeader(title="The River of Teachers Prototype", titleWidth = 350)
 
 sidebar<-dashboardSidebar(
   sidebarMenu(
@@ -30,10 +30,8 @@ sidebar<-dashboardSidebar(
               startview = 'year', weekstart = 1
     ),    
     
-    # selectInput("yearInput", "Year of DOE Entry",choices = c(2012, 2013, 2014, 2015, 2016)),
     checkboxGroupInput("tppInput", "Teacher Preparation Program",choices = c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers'), selected=c('Columbia', 'TFA', 'CUNY', 'Other', 'NYU','Baruch','Brown','Rutgers')),
     selectInput("dbnInput", "Restrict to DBN", choices=c("All DBNs", "00X001", "00X002","00X003")),
-    # menuItem("River", tabName = "d3"),
     menuItem("River", tabName = "d3", icon = icon("tint"))
     ),
   helpText(HTML("<b>DISCLAIMER</b>")),

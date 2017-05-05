@@ -13,6 +13,6 @@ This project is intended to result in a "flow", "parallel sets", "sankey", or ot
 The first prototype of the visualization will be implemented using a Shiny Dashboard and a sankey visualization. Based on design critiques and user testing subsequent prototypes may take advantage of more flexible platforms (i.e. d3.js).
 
 
-Shiny app: https://sramirez1.shinyapps.io/TeacherFlows/
+Shiny app: https://sramirez1.shinyapps.io/teacherflows_v2/
 
 ####Disclaimer: I contributed to this book in my own personal capacity. The views and content expressed here do not necessarily represent the views of the NYC Department of Education.
