@@ -114,14 +114,6 @@ server <- function(input, output) {
   codes<- factor(codes, levels = codes)
   
   codesJS <- paste(shQuote(codes, type = "sh"), collapse = ' , ')
-  
-  observe({class(year(input$dateEnd))})
-
-
-  ##Generate sankey diagram using networkD3
-  # sankey<-sankeyNetwork(Links=links, Nodes = nodes, Source = 'origin_id', Target = 'dest_id',
-  #               Value = 'counts', NodeID = 'name', fontSize = 16, sinksRight=FALSE, height=1500, width=2000
-  #               )
 
   output$Sankey2 <- renderSankeyNetwork({
     
@@ -230,6 +222,39 @@ server <- function(input, output) {
         left_join(nodes, by = c('destinations' = 'name')) %>%
         rename(dest_id = id)
     
+    #Define node counts
+    programNodeCount <- length(unique(nodes$name[nodes$name %in% programs]))
+    entryNodeCount <- length(unique(nodes$name[substr(nodes$name,1,3) == "DOE"]))
+    ratingNodeCount <- length(unique(nodes$name[substr(nodes$name,3,4) %in% c("Hi","Ef", "De", "In", "Ex")]))
+    
+    #Define domain() to apply color to nodes
+    programNodes <- nodes$name[nodes$name %in% programs]
+    programNodes <- paste(shQuote(programNodes, type = "sh"), collapse = ' , ')
+    
+    entryNodes <- nodes$name[substr(nodes$name,1,3) == "DOE"]
+    entryNodes <- paste(shQuote(entryNodes, type = "sh"), collapse = ' , ')
+    
+    ratingNodes <- nodes$name[substr(nodes$name,3,4) %in% c("Hi","Ef", "De", "In", "Ex")]
+    ratingNodes <- sort(factor(ratingNodes, levels = codes))
+    ratingNodes <- paste(shQuote(ratingNodes, type = "sh"), collapse = ' , ')
+    
+    domainNodes <- paste(programNodes, entryNodes, ratingNodes, sep = ",")
+    
+    #Define color range() to apply to the previously defined domain()
+    program_colors <- c('#e0f3db','#ccebc5','#a8ddb5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081')
+    program_colors <- paste(shQuote(program_colors[1:programNodeCount], type = "sh"), collapse = ' , ')
+    
+    entry_colors <- c('#d0d1e6','#a6bddb','#67a9cf','#1c9099','#016c59')
+    entry_colors <- paste(shQuote(entry_colors[1:entryNodeCount], type = "sh"), collapse = ' , ')
+    
+    rating_colors <- c('#78a8e1','#BAE58A','#FFC76B','#F8EE6E','#9933FF')
+    rating_colors <- paste(shQuote(rep(rating_colors, ratingNodeCount), type = "sh"), collapse = ' , ')
+    
+    colorRange <- paste(program_colors,
+                        entry_colors,
+                        rating_colors,
+                        sep = ',')
+    
     sankeyNetwork(Links = links,
                   Nodes = nodes,
                   Source = 'origin_id',
@@ -250,13 +275,13 @@ server <- function(input, output) {
                   dragY = TRUE,
                   align = "center", 
                   curvature = .8,
-                  linkOpacity = 0.25,
+                  linkOpacity = 0.4,
                   nodeLabelMargin = 5,
                   xScalingFactor = 1,
                   # scaleNodeBreadthsByString = TRUE,
                   colourScale = JS(paste0("d3.scaleOrdinal()
-                                          .domain([",codesJS,"])
-                                          .range(['#78a8e1','#BAE58A','#FFC76B','#F8EE6E','#9933FF'])
+                                          .domain([",domainNodes,"])
+                                          .range([",colorRange,"])
                                           .unknown(['#ccc'])")
                                    )
                   )
