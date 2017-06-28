@@ -1,7 +1,7 @@
 #Load libraries
 library(shiny)
 library(dplyr)
-library(googleVis)
+# library(googleVis)
 library(sankeyD3)
 library(DT)
 library(shinydashboard)
